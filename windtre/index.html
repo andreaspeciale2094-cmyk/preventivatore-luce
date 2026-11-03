@@ -693,6 +693,7 @@ function readBill(p){
     if(d.note)msg+=" "+d.note;
     setStatus(p,warn.length?"warn":"ok",msg);
     $("exampleBox").hidden=true;
+    try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"tecnosmart-bolletta",tipo:kind},"*")}catch(e){}
     calc();
   }).catch(function(e){
     var m={not_granted:"Non hai dato il permesso a usare Claude in questa pagina.",rate_limited:"Troppe richieste. Riprova tra qualche minuto.",image_rejected:"Immagine non accettata. Usa una foto o schermata in JPG, PNG o WebP.",bad_code:"Codice di accesso errato. Riprova.",no_code:"Serve il codice di accesso per la lettura automatica.",api_error:"Il servizio di lettura non risponde. Riprova o inserisci i dati a mano.",invalid_json:"Lettura non riuscita. Prova con una foto più nitida o inserisci i dati a mano.",session_expired:"Sessione scaduta. Accedi di nuovo."}[e&&e.code];
