@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Preventivatore Fastweb Energia</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -208,6 +209,14 @@ details.all>summary{padding:12px 14px;background:var(--surface);border:1px solid
 <div class="stepnav"><button type="button" class="btn big" data-go="2">Avanti: le bollette</button></div>
 </section>
 <section class="step" id="step2" aria-label="Bollette"><h1>Le bollette</h1><p class="sub">Carica il PDF o una foto, oppure scrivi i dati. Il gas si attiva solo con la luce.</p>
+  <section class="panel">
+    <span class="lbl" id="lblPer">La bolletta è</span>
+    <div class="seg" role="radiogroup" aria-labelledby="lblPer">
+      <label><input type="radio" name="per" id="per_m" value="m"><span>Mensile</span></label>
+      <label><input type="radio" name="per" id="per_b" value="b" checked><span>Bimestrale</span></label>
+    </div>
+    <div class="hint" style="margin-top:6px">Mensile: PUN e PSV del mese precedente. Bimestrale: media dei due mesi precedenti.</div>
+  </section>
   <div class="example" id="exampleBox">
     <span><strong>Dati di esempio.</strong> Sostituiscili con quelli della bolletta del cliente.</span>
     <button class="btn small" id="clearExample" type="button">Svuota i campi</button>
@@ -268,10 +277,11 @@ details.all>summary{padding:12px 14px;background:var(--surface);border:1px solid
   <section class="panel">
     <details style="border-top:0;padding-top:0">
       <summary>Parametri di calcolo per le offerte a consumo (FIX e FLEX)</summary>
-      <p class="note" style="margin:8px 0 12px">Le FLAT hanno un canone fisso e il loro importo è esatto. FIX e FLEX dipendono da questi valori, che il canvass non riporta. Per un importo definitivo usa il Preventivatore del Portale Agenti.</p>
+      <p class="note" id="indiciInfo" style="margin-top:8px"></p>
+      <p class="note" style="margin:8px 0 12px">Le FLAT hanno un canone fisso e il loro importo è esatto. FIX e FLEX dipendono da questi valori, che il canvass non riporta. PUN e PSV di partenza dipendono da come hai scelto la bolletta nel passo 2: mensile = mese precedente, bimestrale = media dei due mesi precedenti. È lo stesso periodo della bolletta che porta il cliente, così il confronto è alla pari. Vengono dalla tabella del punto vendita: ogni mese va aggiunta la riga nuova. Se la bolletta è di un altro periodo, scrivi qui i valori di quel periodo. Per un importo definitivo usa il Preventivatore del Portale Agenti.</p>
       <div class="fields">
-        <div class="f"><label class="lbl" for="p_pun">PUN previsto (€/kWh)</label><input id="p_pun" inputmode="decimal" value="0,24"><div class="hint">Fine ottobre 2026 tra 0,224 e 0,259</div></div>
-        <div class="f"><label class="lbl" for="p_psv">PSV previsto (€/Smc)</label><input id="p_psv" inputmode="decimal" value="0,90"><div class="hint">Ottobre 2026 tra 0,77 e 1,07</div></div>
+        <div class="f"><label class="lbl" for="p_pun">PUN previsto (€/kWh)</label><input id="p_pun" inputmode="decimal" value="0,24"><div class="hint">Dipende da bolletta mensile o bimestrale (passo 2)</div></div>
+        <div class="f"><label class="lbl" for="p_psv">PSV previsto (€/Smc)</label><input id="p_psv" inputmode="decimal" value="0,90"><div class="hint">Dipende da bolletta mensile o bimestrale (passo 2)</div></div>
         <div class="f"><label class="lbl" for="p_perd">Perdite di rete sulla luce (%)</label><input id="p_perd" inputmode="decimal" value="10,2"></div>
         <div class="f"><label class="lbl" for="p_disp">Dispacciamento luce (€/kWh)</label><input id="p_disp" inputmode="decimal" value="0,017"><div class="hint">Il canvass lo esclude dal prezzo. In bolletta Iren: 0,015 a 0,018</div></div>
       </div>
@@ -306,6 +316,36 @@ var L={
     gas:{iva:0.22,fix:{price:0.80,comm:20,conv:10},flex:{spread:0.13,comm:20,conv:10}}
   }
 };
+/* INDICI DI MERCATO: PUN (H24, €/kWh) e PSV (€/Smc) medi di ogni mese, dalla tabella del punto vendita. Per aggiungere un mese basta una riga nuova in "mesi", con la chiave AAAA-MM. */
+var INDICI={fonte:"tabella PUN (H24) e PSV del punto vendita",aggiornato:"2026-11-03",mesi:{"2026-09":{pun:0.207542,psv:0.843182},"2026-10":{pun:0.230817,psv:0.945436}}};
+var MESI_IT=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+function itDate(s){var p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function chiaveMese(off){var d=new Date(),y=d.getFullYear(),m=d.getMonth()+1-off;while(m<1){m+=12;y--}return y+"-"+String(m).padStart(2,"0")}
+function nomeMese(k){var p=k.split("-");return MESI_IT[Number(p[1])-1]+" "+p[0]}
+function r6(x){return Math.round(x*1e6)/1e6}
+function indiciPer(){
+  var k1=chiaveMese(1),k2=chiaveMese(2),a=INDICI.mesi[k1],b=INDICI.mesi[k2];
+  if($("per_m").checked){
+    if(!a)return {mens:true,manca:[nomeMese(k1)]};
+    return {pun:a.pun,psv:a.psv,mens:true,et:"mese precedente ("+nomeMese(k1)+")"};
+  }
+  var man=[];if(!a)man.push(nomeMese(k1));if(!b)man.push(nomeMese(k2));
+  if(man.length)return {mens:false,manca:man};
+  return {pun:(a.pun+b.pun)/2,psv:(a.psv+b.psv)/2,mens:false,et:"media dei due mesi precedenti ("+nomeMese(k2)+" e "+nomeMese(k1)+")"};
+}
+function applyIndici(){
+  var v=indiciPer();
+  if(v.manca){
+    $("p_pun").value="";$("p_psv").value="";
+    $("indiciInfo").textContent="Mancano PUN e PSV di "+v.manca.join(" e ")+" nella tabella. Scrivili a mano qui sotto, oppure aggiungi il mese alla tabella.";
+    return;
+  }
+  $("p_pun").value=String(r6(v.pun)).replace(".",",");
+  $("p_psv").value=String(r6(v.psv)).replace(".",",");
+  $("indiciInfo").textContent="Bolletta "+(v.mens?"mensile":"bimestrale")+": "+v.et+". PUN "+n3(r6(v.pun),6)+" €/kWh · PSV "+n3(r6(v.psv),6)+" €/Smc. Fonte: "+INDICI.fonte+" (aggiornata il "+itDate(INDICI.aggiornato)+").";
+}
+function setPer(v){$("per_"+v).checked=true;applyIndici()}
+function initIndici(){applyIndici();$("per_m").addEventListener("change",applyIndici);$("per_b").addEventListener("change",applyIndici)}
 var $=function(id){return document.getElementById(id)};
 function num(s){
   if(s==null)return NaN; s=String(s).trim().replace(/\s|€/g,""); if(!s)return NaN;
@@ -448,6 +488,8 @@ function calc(){
   $("g_info").textContent=sg?("Prezzo gas in bolletta: "+n3(sg.prezzo,4)+" \u20ac/Smc \u00b7 quota fissa: "+eur(r2(sg.fissaMese))+" al mese \u00b7 consumo annuo usato: "+n3(sg.cons,0)+" Smc"):"";
   if(!sl&&!sg){R.innerHTML='<div class="panel"><h2>Risultato</h2><p class="note" style="margin-top:6px">Inserisci almeno giorni, consumo e totale della bolletta luce per vedere il confronto.</p></div>';lastSummary="";return}
   if(!sl&&sg){R.innerHTML='<div class="warnbox"><strong>Serve anche la luce.</strong> Il gas Fastweb si attiva solo con Fastweb Luce, quindi senza la bolletta luce non si può dire se l\'insieme conviene.</div>';lastSummary="";return}
+  var mPun=!(c.pun>0),mPsv=sg&&!(c.psv>0);
+  if(mPun||mPsv){R.innerHTML='<div class="warnbox"><strong>Manca '+(mPun?"il PUN":"")+(mPun&&mPsv?" e ":"")+(mPsv?"il PSV":"")+' del periodo della bolletta.</strong> Scrivilo nei parametri del passo 3, oppure aggiungi il mese alla tabella.</div>';lastSummary="";return}
   var lo=luceOffers(sl,c).filter(function(o){return !o.nd});
   var luceAll=luceOffers(sl,c);
   var go=[],gasAll=[];
@@ -648,6 +690,7 @@ function readBill(p){
     var ok=[];
     function put(id,v,dec){if(v!=null&&isFinite(Number(v))){$(id).value=String(Number(v).toFixed(dec)).replace(".",",");ok.push(id)}}
     put(p+"_giorni",d.giorni_periodo,0);put(p+"_cons",d.consumo_periodo,0);
+    if(d.giorni_periodo!=null){var gp=Number(d.giorni_periodo);if(gp>=25&&gp<=35)setPer("m");else if(gp>=55&&gp<=70)setPer("b")}
     if(d.consumo_annuo!=null)put(p+"_consAnn",d.consumo_annuo,0);
     put(p+"_en",d.quota_energia,2);put(p+"_fix",d.quota_fissa,2);
     if(d.spesa_annua!=null)put(p+"_totAnn",d.spesa_annua,2);
@@ -716,6 +759,8 @@ function go(n){
 }
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("[data-go]");if(b)go(Number(b.getAttribute("data-go")))});
 $("newBtn").addEventListener("click",function(){$("clearExample").click();["l","g"].forEach(function(p){setStatus(p,"","");$(p+"_file").value="";$(p+"_read").disabled=true});go(1)});
-renderListino();calc();initRead();
+initIndici();renderListino();calc();initRead();
 })();
 </script>
+
+</body></html>
